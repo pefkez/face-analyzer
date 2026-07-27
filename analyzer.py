@@ -220,16 +220,27 @@ def detect_pores(roi, mask):
 def detect_wrinkles(roi, mask):
     if mask is None or cv2.countNonZero(mask) < 50:
         return None
-    gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-    blurred = cv2.GaussianBlur(gray, (3, 3), 0)
-    edges = cv2.Canny(blurred, 30, 100)
-    edges = cv2.bitwise_and(edges, mask)
-    lines = cv2.HoughLinesP(edges, 1, np.pi / 180, 30, minLineLength=20, maxLineGap=10)
-    severity = 0
-    if lines is not None:
-        total_len = sum(np.linalg.norm([l[0][2] - l[0][0], l[0][3] - l[0][1]]) for l in lines)
-        severity = min(100, int(total_len / 20))
-    return severity
+    try:
+        gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+        blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+
+        mean_intensity = cv2.mean(blurred, mask)[0]
+        low_thresh = max(10, int(mean_intensity * 0.15))
+        high_thresh = max(30, int(mean_intensity * 0.4))
+        edges = cv2.Canny(blurred, low_thresh, high_thresh)
+        edges = cv2.bitwise_and(edges, mask)
+
+        lines = cv2.HoughLinesP(edges, 1, np.pi / 180, 30, minLineLength=15, maxLineGap=8)
+        severity = 0
+        if lines is not None and len(lines) > 0:
+            total_len = 0
+            for line in lines:
+                x1, y1, x2, y2 = line[0]
+                total_len += np.hypot(x2 - x1, y2 - y1)
+            severity = min(100, int(total_len / 15))
+        return severity
+    except Exception:
+        return None
 
 def analyze_asymmetry(landmarks, w, h):
     try:
