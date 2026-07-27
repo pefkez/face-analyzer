@@ -430,11 +430,31 @@ def analyze_face(image_path):
         total_severity += p["severity"]
     total_severity = min(100, total_severity // max(len(problems), 1)) if problems else 0
 
+    tier = get_chad_tier(total_severity)
+
     return {
         "problems": problems,
         "problem_zones": problem_zones,
         "total_severity": total_severity,
         "problems_count": len(set(p["type"] for p in problems)),
         "image_width": w,
-        "image_height": h
+        "image_height": h,
+        "tier": tier
     }
+
+
+CHAD_TIERS = [
+    {"id": "chad", "label": "Chad", "range": (0, 9), "color": "#00e676"},
+    {"id": "htn", "label": "HTN", "range": (10, 24), "color": "#69f0ae"},
+    {"id": "mtn", "label": "MTN", "range": (25, 39), "color": "#ffd740"},
+    {"id": "lnt", "label": "LNT", "range": (40, 54), "color": "#ffab40"},
+    {"id": "sub5", "label": "Sub5", "range": (55, 69), "color": "#ff6e40"},
+    {"id": "sub3", "label": "Sub3", "range": (70, 84), "color": "#ff3d00"},
+    {"id": "truecel", "label": "Truecel", "range": (85, 100), "color": "#d50000"},
+]
+
+def get_chad_tier(severity):
+    for tier in CHAD_TIERS:
+        if tier["range"][0] <= severity <= tier["range"][1]:
+            return tier
+    return CHAD_TIERS[-1]
