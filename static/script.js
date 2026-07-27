@@ -10,6 +10,8 @@ const COLORS = {
     yellow: '#ffd43b'
 };
 
+const REQUEST_TIMEOUT = 30000;
+
 const ZONE_NAMES = {
     forehead: 'Лоб',
     left_cheek: 'Левая щека',
@@ -61,17 +63,26 @@ function uploadFile(file) {
     const formData = new FormData();
     formData.append('photo', file);
 
-    fetch('/analyze', { method: 'POST', body: formData })
-        .then(r => r.json())
-        .then(data => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+
+    fetch('/analyze', { method: 'POST', body: formData, signal: controller.signal })
+        .then(r => r.json().then(data => ({ ok: r.ok, data })))
+        .then(({ ok, data }) => {
+            clearTimeout(timeoutId);
             document.getElementById('loading-section').classList.add('hidden');
-            if (data.error) {
-                showError(data.error);
+            if (!ok || data.error) {
+                showError(data.error || 'Неизвестная ошибка.');
                 return;
             }
             showResults(data);
         })
-        .catch(() => {
+        .catch((err) => {
+            clearTimeout(timeoutId);
+            if (err.name === 'AbortError') {
+                showError('Сервер не отвечает. Попробуйте снова.');
+                return;
+            }
             document.getElementById('loading-section').classList.add('hidden');
             showError('Ошибка соединения с сервером. Попробуйте снова.');
         });
