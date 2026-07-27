@@ -3,10 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FaceAnalyzer — Анализ кожи лица</title>
+    <title>TruecelAnalyzer</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
+    <div class="lang-switcher">
+        <button class="lang-btn active" data-lang="ru">RU</button>
+        <button class="lang-btn" data-lang="en">EN</button>
+    </div>
     <div class="bg-orbs">
         <div class="orb orb-1"></div>
         <div class="orb orb-2"></div>
@@ -14,50 +18,50 @@
     </div>
     <div class="container">
         <header>
-            <h1>FaceAnalyzer</h1>
-            <p>Загрузите фото лица — получите анализ кожи и рекомендации</p>
+            <h1>TruecelAnalyzer</h1>
+            <p data-i18n="header_desc">Загрузите фото лица — получите анализ кожи и рекомендации</p>
         </header>
 
         <div id="upload-section">
             <div class="upload-zone" id="dropZone">
                 <div class="upload-icon">
-                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                         <polyline points="17 8 12 3 7 8"/>
                         <line x1="12" y1="3" x2="12" y2="15"/>
                     </svg>
                 </div>
-                <p class="upload-text">Перетащите фото сюда или <span class="link">выберите файл</span></p>
-                <p class="upload-hint">PNG, JPG до 16MB. Анфас, хорошее освещение</p>
+                <p class="upload-text" data-i18n="upload_text">Перетащите фото сюда или <span class="link">выберите файл</span></p>
+                <p class="upload-hint" data-i18n="upload_hint">PNG, JPG, WEBP до 16MB. Анфас, хорошее освещение</p>
                 <input type="file" id="fileInput" accept="image/png,image/jpeg,image/webp" hidden>
             </div>
         </div>
 
         <div id="loading-section" class="hidden">
             <div class="spinner"></div>
-            <p>Анализируем лицо...</p>
+            <p data-i18n="loading_text">Анализируем лицо...</p>
             <div class="loading-steps">
-                <div class="step">Детекция лица</div>
-                <div class="step">Поиск проблемных зон</div>
-                <div class="step">Формирование рекомендаций</div>
+                <div class="step" data-i18n="step1">Детекция лица</div>
+                <div class="step" data-i18n="step2">Поиск проблемных зон</div>
+                <div class="step" data-i18n="step3">Формирование рекомендаций</div>
             </div>
         </div>
 
         <div id="result-section" class="hidden">
             <div class="result-header">
-                <h2>Результаты анализа</h2>
+                <h2 data-i18n="result_title">Результаты анализа</h2>
                 <div class="summary">
                     <div class="summary-card total">
                         <span class="summary-value" id="totalSeverity">0</span>
-                        <span class="summary-label">Общая оценка</span>
+                        <span class="summary-label" data-i18n="summary_total">Общая оценка</span>
                     </div>
                     <div class="summary-card problems-count">
                         <span class="summary-value" id="problemsCount">0</span>
-                        <span class="summary-label">Проблем найдено</span>
+                        <span class="summary-label" data-i18n="summary_problems">Проблем найдено</span>
                     </div>
                     <div class="summary-card tier-card" id="tierCard">
                         <span class="summary-value" id="tierValue">—</span>
-                        <span class="summary-label">Тир</span>
+                        <span class="summary-label" data-i18n="summary_tier">Тир</span>
                     </div>
                 </div>
             </div>
@@ -73,14 +77,14 @@
                 <div class="problems-list" id="problemsList"></div>
             </div>
 
-            <button class="btn btn-secondary" onclick="resetApp()">Анализировать другое фото</button>
+            <button class="btn btn-secondary" data-i18n="btn_reset" onclick="resetApp()">Анализировать другое фото</button>
         </div>
 
         <div id="error-section" class="hidden">
             <div class="error-card">
-                <h2>Ошибка</h2>
+                <h2 data-i18n="error_title">Ошибка</h2>
                 <p id="errorMessage"></p>
-                <button class="btn btn-primary" onclick="resetApp()">Попробовать снова</button>
+                <button class="btn btn-primary" data-i18n="btn_retry" onclick="resetApp()">Попробовать снова</button>
             </div>
         </div>
     </div>

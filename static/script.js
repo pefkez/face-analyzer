@@ -13,19 +13,161 @@ const COLORS = {
 const REQUEST_TIMEOUT = 30000;
 const MAX_RETRIES = 2;
 
-const ZONE_NAMES = {
-    forehead: 'Лоб',
-    left_cheek: 'Левая щека',
-    right_cheek: 'Правая щека',
-    nose: 'Нос',
-    chin: 'Подбородок',
-    under_eyes: 'Под глазами',
-    all: 'Всё лицо'
+const TRANSLATIONS = {
+    ru: {
+        header_desc: 'Загрузите фото лица — получите анализ кожи и рекомендации',
+        upload_text: 'Перетащите фото сюда или <span class="link">выберите файл</span>',
+        upload_hint: 'PNG, JPG, WEBP до 16MB. Анфас, хорошее освещение',
+        loading_text: 'Анализируем лицо...',
+        step1: 'Детекция лица',
+        step2: 'Поиск проблемных зон',
+        step3: 'Формирование рекомендаций',
+        result_title: 'Результаты анализа',
+        summary_total: 'Общая оценка',
+        summary_problems: 'Проблем найдено',
+        summary_tier: 'Тир',
+        btn_reset: 'Анализировать другое фото',
+        error_title: 'Ошибка',
+        btn_retry: 'Попробовать снова',
+        upload_error_format: 'Пожалуйста, выберите изображение в формате PNG или JPG.',
+        upload_error_size: 'Файл слишком большой. Максимальный размер — 16MB.',
+        server_error: 'Сервер не отвечает. Попробуйте снова.',
+        connection_error: 'Ошибка соединения с сервером. Попробуйте снова.',
+        acne: 'Акне и воспаления',
+        dark_circles: 'Тёмные круги',
+        redness: 'Покраснения',
+        pores: 'Расширенные поры',
+        wrinkles: 'Морщины',
+        asymmetry: 'Асимметрия',
+        forehead: 'Лоб',
+        left_cheek: 'Левая щека',
+        right_cheek: 'Правая щека',
+        nose: 'Нос',
+        chin: 'Подбородок',
+        under_eyes: 'Под глазами',
+        all: 'Всё лицо',
+        modal_causes: 'Возможные причины',
+        modal_recommendations: 'Рекомендации',
+        modal_products: 'Рекомендуемые средства',
+        sections: ' участка',
+    },
+    en: {
+        header_desc: 'Upload a face photo — get skin analysis & recommendations',
+        upload_text: 'Drop photo here or <span class="link">select file</span>',
+        upload_hint: 'PNG, JPG, WEBP up to 16MB. Front face, good lighting',
+        loading_text: 'Analyzing face...',
+        step1: 'Face detection',
+        step2: 'Problem zone search',
+        step3: 'Generating recommendations',
+        result_title: 'Analysis Results',
+        summary_total: 'Overall Score',
+        summary_problems: 'Issues Found',
+        summary_tier: 'Tier',
+        btn_reset: 'Analyze another photo',
+        error_title: 'Error',
+        btn_retry: 'Try again',
+        upload_error_format: 'Please select a PNG or JPG image.',
+        upload_error_size: 'File too large. Maximum size is 16MB.',
+        server_error: 'Server is not responding. Please try again.',
+        connection_error: 'Connection error. Please try again.',
+        acne: 'Acne & Inflammation',
+        dark_circles: 'Dark Circles',
+        redness: 'Redness',
+        pores: 'Enlarged Pores',
+        wrinkles: 'Wrinkles',
+        asymmetry: 'Asymmetry',
+        forehead: 'Forehead',
+        left_cheek: 'Left Cheek',
+        right_cheek: 'Right Cheek',
+        nose: 'Nose',
+        chin: 'Chin',
+        under_eyes: 'Under Eyes',
+        all: 'Full Face',
+        modal_causes: 'Possible Causes',
+        modal_recommendations: 'Recommendations',
+        modal_products: 'Recommended Products',
+        sections: ' sections',
+    }
 };
 
+const EN_DESCRIPTIONS = {
+    acne: {
+        label: 'Acne & Inflammation',
+        description: 'Redness and inflamed areas detected on the face.',
+        causes: ['Hormonal changes', 'Improper skincare', 'High-sugar diet', 'Stress'],
+        solutions: ['Use salicylic acid toner 2x daily', 'Apply benzoyl peroxide (2.5%) spot treatment', 'Wash with gentle pH 5.5 cleanser', 'Consult a dermatologist'],
+        products: ['Salicylic Acid 2%', 'Benzoyl Peroxide 2.5%', 'Zinc Cleanser']
+    },
+    dark_circles: {
+        label: 'Dark Circles',
+        description: 'The under-eye area has a darker shade than the rest of the face.',
+        causes: ['Lack of sleep', 'Allergies', 'Dehydration', 'Age-related changes', 'Genetics'],
+        solutions: ['Sleep 7-8 hours per night', 'Use caffeine & vitamin K eye cream', 'Lymphatic drainage massage', 'Drink enough water (30ml per kg)'],
+        products: ['Caffeine Eye Cream', 'Hydrogel Patches', 'Vitamin C Serum']
+    },
+    redness: {
+        label: 'Redness & Couperose',
+        description: 'Areas with increased redness and visible vascular network.',
+        causes: ['Sensitive skin', 'Couperose', 'Rosacea', 'Harsh cosmetics'],
+        solutions: ['Use niacinamide & panthenol products', 'Avoid scrubs and alcohol toners', 'Apply SPF 50 daily', 'Use thermal water'],
+        products: ['Niacinamide 5%', 'Cica Cream', 'SPF 50+']
+    },
+    asymmetry: {
+        label: 'Facial Asymmetry',
+        description: 'Slight asymmetry between the left and right sides of the face.',
+        causes: ['Natural feature', 'One-sided chewing habit', 'Poor posture', 'Muscle tension'],
+        solutions: ['Do face yoga (facebuilding)', 'Chew evenly on both sides', 'Watch your posture', 'Facial massage to relax muscles'],
+        products: ['Gua Sha Tool', 'Facial Massage Oil']
+    },
+    pores: {
+        label: 'Enlarged Pores',
+        description: 'Pores are noticeably enlarged, especially in the T-zone.',
+        causes: ['Increased sebum production', 'Age-related changes', 'Improper cleansing', 'Sun damage'],
+        solutions: ['Use niacinamide 5-10% serum', 'Gentle enzyme peel 1-2x/week', 'Apply SPF 50 daily', 'Wash with AHA acids'],
+        products: ['Niacinamide 10%', 'Enzyme Powder', 'AHA Toner 5%']
+    },
+    wrinkles: {
+        label: 'Expression Wrinkles',
+        description: 'Lines and wrinkles detected on the forehead, around eyes, and nasolabial area.',
+        causes: ['Age-related changes', 'Active facial expressions', 'Sun damage', 'Skin dehydration', 'Smoking'],
+        solutions: ['Use retinol (start with 0.25-0.5%)', 'Apply hyaluronic acid moisturizer', 'SPF 50 — mandatory every day', 'Take collagen supplements'],
+        products: ['Retinol 0.3%', 'Hyaluronic Acid', 'SPF 50+']
+    }
+};
+
+let currentLang = 'ru';
 let currentData = null;
 
+function t(key) {
+    const val = TRANSLATIONS[currentLang][key];
+    return val !== undefined ? val : key;
+}
+
+function translatePage() {
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        el.innerHTML = t(key);
+    });
+    if (currentData) {
+        showResults(currentData);
+    }
+}
+
+function switchLanguage(lang) {
+    if (lang === currentLang) return;
+    currentLang = lang;
+    document.querySelectorAll('.lang-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.lang === lang);
+    });
+    document.documentElement.lang = lang === 'ru' ? 'ru' : 'en';
+    translatePage();
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.addEventListener('click', () => switchLanguage(btn.dataset.lang));
+    });
+
     const dropZone = document.getElementById('dropZone');
     const fileInput = document.getElementById('fileInput');
 
@@ -50,11 +192,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function uploadFile(file) {
     if (!file.type.match(/^image\/(png|jpeg|webp)$/)) {
-        showError('Пожалуйста, выберите изображение в формате PNG или JPG.');
+        showError(t('upload_error_format'));
         return;
     }
     if (file.size > 16 * 1024 * 1024) {
-        showError('Файл слишком большой. Максимальный размер — 16MB.');
+        showError(t('upload_error_size'));
         return;
     }
 
@@ -77,7 +219,7 @@ function sendWithRetry(url, body, attempt) {
             clearTimeout(timeoutId);
             document.getElementById('loading-section').classList.add('hidden');
             if (!ok || data.error) {
-                showError(data.error || 'Неизвестная ошибка.');
+                showError(data.error || t('connection_error'));
                 return;
             }
             showResults(data);
@@ -85,14 +227,14 @@ function sendWithRetry(url, body, attempt) {
         .catch((err) => {
             clearTimeout(timeoutId);
             if (err.name === 'AbortError') {
-                showError('Сервер не отвечает. Попробуйте снова.');
+                showError(t('server_error'));
                 return;
             }
             if (attempt < MAX_RETRIES) {
                 setTimeout(() => sendWithRetry(url, body, attempt + 1), 1000 * (attempt + 1));
             } else {
                 document.getElementById('loading-section').classList.add('hidden');
-                showError('Ошибка соединения с сервером. Попробуйте снова.');
+                showError(t('connection_error'));
             }
         });
 }
@@ -104,21 +246,20 @@ function showResults(data) {
     const cards = document.querySelectorAll('.summary-card');
     cards.forEach((card, i) => {
         card.style.opacity = '0';
-        card.style.transform = 'translateY(16px)';
+        card.style.transform = 'translateY(12px)';
         requestAnimationFrame(() => {
-            card.style.transition = `opacity 0.4s ease-out ${i * 0.08}s, transform 0.4s ease-out ${i * 0.08}s`;
+            card.style.transition = `opacity 0.35s ease-out ${i * 0.06}s, transform 0.35s ease-out ${i * 0.06}s`;
             card.style.opacity = '1';
             card.style.transform = 'translateY(0)';
         });
     });
 
     const resultBody = document.querySelector('.result-body');
-    const resultBtn = document.querySelector('.result-section > .btn');
     if (resultBody) {
         resultBody.style.opacity = '0';
-        resultBody.style.transform = 'translateY(20px)';
+        resultBody.style.transform = 'translateY(16px)';
         requestAnimationFrame(() => {
-            resultBody.style.transition = 'opacity 0.5s ease-out 0.25s, transform 0.5s ease-out 0.25s';
+            resultBody.style.transition = 'opacity 0.4s ease-out 0.2s, transform 0.4s ease-out 0.2s';
             resultBody.style.opacity = '1';
             resultBody.style.transform = 'translateY(0)';
         });
@@ -130,9 +271,9 @@ function showResults(data) {
     const resetBtn = document.querySelector('#result-section > .btn');
     if (resetBtn) {
         resetBtn.style.opacity = '0';
-        resetBtn.style.transform = 'translateY(12px)';
+        resetBtn.style.transform = 'translateY(8px)';
         requestAnimationFrame(() => {
-            resetBtn.style.transition = 'opacity 0.4s ease-out 0.4s, transform 0.4s ease-out 0.4s';
+            resetBtn.style.transition = 'opacity 0.3s ease-out 0.3s, transform 0.3s ease-out 0.3s';
             resetBtn.style.opacity = '1';
             resetBtn.style.transform = 'translateY(0)';
         });
@@ -163,7 +304,7 @@ function renderOverlay(data) {
 
     const seenTypes = new Set();
 
-    data.problem_zones.forEach((zone, index) => {
+    data.problem_zones.forEach((zone) => {
         seenTypes.add(zone.type);
 
         const el = document.createElement('div');
@@ -188,15 +329,7 @@ function renderOverlay(data) {
 }
 
 function getTypeLabel(type) {
-    const labels = {
-        acne: 'Акне',
-        dark_circles: 'Тёмные круги',
-        redness: 'Покраснения',
-        pores: 'Расширенные поры',
-        wrinkles: 'Морщины',
-        asymmetry: 'Асимметрия'
-    };
-    return labels[type] || type;
+    return t(type);
 }
 
 function renderProblemsList(data) {
@@ -220,13 +353,14 @@ function renderProblemsList(data) {
     Object.values(grouped).forEach(zone => {
         const item = document.createElement('div');
         item.className = `problem-item ${zone.type}`;
-        let zoneName = zone.type === 'asymmetry' ? 'Всё лицо' : (ZONE_NAMES[zone.zone] || zone.zone || '');
+        let zoneName = zone.type === 'asymmetry' ? t('all') : (t(zone.zone) || zone.zone || '');
+        const countText = zone.count > 1 ? ` (${zone.count}${t('sections')})` : '';
         item.innerHTML = `
             <div class="problem-header">
-                <span class="problem-name">${zone.label}</span>
+                <span class="problem-name">${getTypeLabel(zone.type)}</span>
                 <span class="problem-severity">${zone.maxSeverity}%</span>
             </div>
-            <div class="problem-zone">${zoneName}${zone.count > 1 ? ` (${zone.count} участка)` : ''}</div>
+            <div class="problem-zone">${zoneName}${countText}</div>
         `;
         item.addEventListener('click', () => openModal(zone));
         list.appendChild(item);
@@ -236,12 +370,14 @@ function renderProblemsList(data) {
 function openModal(zone) {
     const modal = document.getElementById('problemModal');
     const body = document.getElementById('modalBody');
-    const d = zone.data;
+    const d = (currentLang === 'en' && EN_DESCRIPTIONS[zone.type])
+        ? EN_DESCRIPTIONS[zone.type]
+        : zone.data;
 
     let severityColor = zone.severity > 60 ? COLORS.red : zone.severity > 30 ? COLORS.orange : COLORS.yellow;
 
     body.innerHTML = `
-        <h2>${zone.label}</h2>
+        <h2>${d.label}</h2>
         <div class="severity-bar">
             <div class="bar">
                 <div class="bar-fill" style="width:${zone.severity}%;background:${severityColor}"></div>
@@ -250,15 +386,15 @@ function openModal(zone) {
         </div>
         <p class="modal-desc">${d.description}</p>
         <div class="modal-section">
-            <h3>Возможные причины</h3>
+            <h3>${t('modal_causes')}</h3>
             <ul>${d.causes.map(c => `<li>${c}</li>`).join('')}</ul>
         </div>
         <div class="modal-section">
-            <h3>Рекомендации</h3>
+            <h3>${t('modal_recommendations')}</h3>
             <ul>${d.solutions.map(s => `<li>${s}</li>`).join('')}</ul>
         </div>
         <div class="modal-section">
-            <h3>Рекомендуемые средства</h3>
+            <h3>${t('modal_products')}</h3>
             <div>${d.products.map(p => `<span class="product-tag">${p}</span>`).join('')}</div>
         </div>
     `;

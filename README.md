@@ -1,5 +1,5 @@
 <div align="center">
-  <h1>FaceAnalyzer</h1>
+  <h1>TruecelAnalyzer</h1>
   <p><strong>AI-powered facial skin analysis & recommendation engine</strong></p>
 
   <p>
@@ -16,7 +16,7 @@
 
 ## Overview
 
-FaceAnalyzer is a web application that detects facial landmarks using **MediaPipe FaceMesh**, analyzes skin conditions across multiple zones, and provides personalized skincare recommendations.
+TruecelAnalyzer is a web application that detects facial landmarks using **MediaPipe FaceMesh**, analyzes skin conditions across multiple zones, and provides personalized skincare recommendations.
 
 Upload a photo — get a detailed breakdown of acne, redness, pores, wrinkles, dark circles, and facial asymmetry with severity scores and product suggestions.
 
@@ -34,6 +34,7 @@ Upload a photo — get a detailed breakdown of acne, redness, pores, wrinkles, d
 - **Rate limiting**: 10 requests/minute per IP
 - **Auto‑cleanup**: old uploads removed after 1 hour
 - **Beautiful UI**: glassmorphism design, animated background, smooth transitions
+- **RU/EN language switcher**
 
 ## Tech Stack
 
@@ -41,7 +42,7 @@ Upload a photo — get a detailed breakdown of acne, redness, pores, wrinkles, d
 |-----------|-----------|
 | Backend | Python 3.10+, Flask 3.1 |
 | Face mesh | MediaPipe 0.10 (FaceMesh) |
-| Image processing | OpenCV 4.10, NumPy 2.1 |
+| Image processing | OpenCV 4.10, NumPy |
 | Frontend | Vanilla JS, CSS3 (glassmorphism) |
 | Templates | Jinja2 |
 
@@ -76,6 +77,7 @@ python app.py
    - **Overlay**: coloured rectangles on the detected problem zones
    - **Problems list**: click any item for causes, solutions, and product recommendations
    - **Modal**: detailed information per problem type
+4. Switch language (RU/EN) via the top-right button
 
 ## API
 
