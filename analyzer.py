@@ -287,19 +287,29 @@ def analyze_asymmetry(landmarks, w, h):
 def analyze_face(image_path):
     img = cv2.imread(image_path)
     if img is None:
-        return {"error": "Не удалось загрузить изображение"}
-    img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        return {"error": "Не удалось загрузить изображение. Файл повреждён или имеет неподдерживаемый формат."}
+
+    try:
+        if img.shape[0] < 10 or img.shape[1] < 10:
+            return {"error": "Изображение слишком маленькое."}
+        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+    except Exception:
+        return {"error": "Ошибка обработки изображения. Возможно, файл битый."}
+
     h, w, _ = img.shape
 
     problems = []
     problem_zones = []
 
-    with mp_face_mesh.FaceMesh(static_image_mode=True, max_num_faces=1, refine_landmarks=True, min_detection_confidence=0.5) as face_mesh:
-        results = face_mesh.process(img_rgb)
-        if not results.multi_face_landmarks:
-            return {"error": "Лицо не обнаружено. Попробуйте другое фото."}
+    try:
+        with mp_face_mesh.FaceMesh(static_image_mode=True, max_num_faces=1, refine_landmarks=True, min_detection_confidence=0.5) as face_mesh:
+            results = face_mesh.process(img_rgb)
+            if not results.multi_face_landmarks:
+                return {"error": "Лицо не обнаружено. Попробуйте другое фото."}
 
-        landmarks = results.multi_face_landmarks[0].landmark
+            landmarks = results.multi_face_landmarks[0].landmark
+    except Exception:
+        return {"error": "Ошибка при анализе лица. Попробуйте другое изображение."}
 
         asymmetry = analyze_asymmetry(landmarks, w, h)
         if asymmetry > 15:
@@ -332,64 +342,70 @@ def analyze_face(image_path):
             roi_mask = mask[y:y+rh, x:x+rw]
 
             for check in region["check"]:
-                if check == "acne":
-                    spots = detect_acne(roi, roi_mask)
-                    for spot in spots:
-                        sx, sy = x + spot["x"], y + spot["y"]
-                        problems.append({"type": "acne", "severity": min(100, spot["area"]), "zone": region["name"], "x": sx, "y": sy})
-                        problem_zones.append({
-                            "type": "acne",
-                            "label": "Акне",
-                            "x": sx, "y": sy, "w": spot["w"], "h": spot["h"],
-                            "severity": min(100, spot["area"]),
-                            "data": PROBLEM_DESCRIPTIONS["acne"]
-                        })
+                try:
+                    if check == "acne":
+                        spots = detect_acne(roi, roi_mask)
+                        for spot in spots:
+                            sx, sy = x + spot["x"], y + spot["y"]
+                            problems.append({"type": "acne", "severity": min(100, spot["area"]), "zone": region["name"], "x": sx, "y": sy})
+                            problem_zones.append({
+                                "type": "acne",
+                                "label": "Акне",
+                                "x": sx, "y": sy, "w": spot["w"], "h": spot["h"],
+                                "severity": min(100, spot["area"]),
+                                "data": PROBLEM_DESCRIPTIONS["acne"]
+                            })
 
-                elif check == "redness":
-                    severity = detect_redness(roi, roi_mask)
-                    if severity and severity > 20:
-                        problems.append({"type": "redness", "severity": severity, "zone": region["name"]})
-                        problem_zones.append({
-                            "type": "redness",
-                            "label": PROBLEM_DESCRIPTIONS["redness"]["label"],
-                            "x": x, "y": y, "w": rw, "h": rh,
-                            "severity": severity,
-                            "data": PROBLEM_DESCRIPTIONS["redness"]
-                        })
+                    elif check == "redness":
+                        severity = detect_redness(roi, roi_mask)
+                        if severity and severity > 20:
+                            problems.append({"type": "redness", "severity": severity, "zone": region["name"]})
+                            problem_zones.append({
+                                "type": "redness",
+                                "label": PROBLEM_DESCRIPTIONS["redness"]["label"],
+                                "x": x, "y": y, "w": rw, "h": rh,
+                                "severity": severity,
+                                "data": PROBLEM_DESCRIPTIONS["redness"]
+                            })
 
-                elif check == "pores":
-                    severity = detect_pores(roi, roi_mask)
-                    if severity and severity > 25:
-                        problems.append({"type": "pores", "severity": severity, "zone": region["name"]})
-                        problem_zones.append({
-                            "type": "pores",
-                            "label": PROBLEM_DESCRIPTIONS["pores"]["label"],
-                            "x": x, "y": y, "w": rw, "h": rh,
-                            "severity": severity,
-                            "data": PROBLEM_DESCRIPTIONS["pores"]
-                        })
+                    elif check == "pores":
+                        severity = detect_pores(roi, roi_mask)
+                        if severity and severity > 25:
+                            problems.append({"type": "pores", "severity": severity, "zone": region["name"]})
+                            problem_zones.append({
+                                "type": "pores",
+                                "label": PROBLEM_DESCRIPTIONS["pores"]["label"],
+                                "x": x, "y": y, "w": rw, "h": rh,
+                                "severity": severity,
+                                "data": PROBLEM_DESCRIPTIONS["pores"]
+                            })
 
-                elif check == "wrinkles":
-                    severity = detect_wrinkles(roi, roi_mask)
-                    if severity and severity > 20:
-                        problems.append({"type": "wrinkles", "severity": severity, "zone": region["name"]})
-                        problem_zones.append({
-                            "type": "wrinkles",
-                            "label": PROBLEM_DESCRIPTIONS["wrinkles"]["label"],
-                            "x": x, "y": y, "w": rw, "h": rh,
-                            "severity": severity,
-                            "data": PROBLEM_DESCRIPTIONS["wrinkles"]
-                        })
+                    elif check == "wrinkles":
+                        severity = detect_wrinkles(roi, roi_mask)
+                        if severity and severity > 20:
+                            problems.append({"type": "wrinkles", "severity": severity, "zone": region["name"]})
+                            problem_zones.append({
+                                "type": "wrinkles",
+                                "label": PROBLEM_DESCRIPTIONS["wrinkles"]["label"],
+                                "x": x, "y": y, "w": rw, "h": rh,
+                                "severity": severity,
+                                "data": PROBLEM_DESCRIPTIONS["wrinkles"]
+                            })
+                except Exception:
+                    pass
 
         under_left_mask = get_region_mask(h, w, landmarks, UNDER_LEFT_EYE)
         under_right_mask = get_region_mask(h, w, landmarks, UNDER_RIGHT_EYE)
         under_eyes_mask = cv2.bitwise_or(under_left_mask, under_right_mask)
 
         if cv2.countNonZero(under_eyes_mask) > 50:
-            lx, ly, lw, lh = cv2.boundingRect(under_left_mask) if cv2.countNonZero(under_left_mask) > 50 else (0,0,0,0)
-            rx, ry, rw, rh = cv2.boundingRect(under_right_mask) if cv2.countNonZero(under_right_mask) > 50 else (0,0,0,0)
+            lx, ly, lw, lh = cv2.boundingRect(under_left_mask) if cv2.countNonZero(under_left_mask) > 50 else (0, 0, 0, 0)
+            rx, ry, rw2, rh2 = cv2.boundingRect(under_right_mask) if cv2.countNonZero(under_right_mask) > 50 else (0, 0, 0, 0)
 
-            severity = detect_dark_circles(img, under_eyes_mask, face_mask)
+            try:
+                severity = detect_dark_circles(img, under_eyes_mask, face_mask)
+            except Exception:
+                severity = None
             if severity and severity > 15:
                 problems.append({"type": "dark_circles", "severity": severity, "zone": "under_eyes"})
                 if lw > 0:
@@ -400,11 +416,11 @@ def analyze_face(image_path):
                         "severity": severity,
                         "data": PROBLEM_DESCRIPTIONS["dark_circles"]
                     })
-                if rw > 0:
+                if rw2 > 0:
                     problem_zones.append({
                         "type": "dark_circles",
                         "label": PROBLEM_DESCRIPTIONS["dark_circles"]["label"],
-                        "x": rx, "y": ry, "w": rw, "h": rh,
+                        "x": rx, "y": ry, "w": rw2, "h": rh2,
                         "severity": severity,
                         "data": PROBLEM_DESCRIPTIONS["dark_circles"]
                     })
