@@ -232,22 +232,46 @@ def detect_wrinkles(roi, mask):
     return severity
 
 def analyze_asymmetry(landmarks, w, h):
-    mid_x = w // 2
-    left_points = []
-    right_points = []
-    for i, lm in enumerate(landmarks):
-        x, y = int(lm.x * w), int(lm.y * h)
-        if x < mid_x:
-            left_points.append((x, y))
-        else:
-            right_points.append((x, y))
-    if len(left_points) < 10 or len(right_points) < 10:
+    try:
+        left_eye_x = np.mean([landmarks[i].x for i in [33, 133]])
+        left_eye_y = np.mean([landmarks[i].y for i in [33, 133]])
+        right_eye_x = np.mean([landmarks[i].x for i in [362, 263]])
+        right_eye_y = np.mean([landmarks[i].y for i in [362, 263]])
+
+        angle = -np.degrees(np.arctan2(right_eye_y - left_eye_y, right_eye_x - left_eye_x))
+
+        cx, cy = w / 2.0, h / 2.0
+        M = cv2.getRotationMatrix2D((cx, cy), angle, 1.0)
+
+        left_dists = []
+        right_dists = []
+
+        for left_idx, right_idx in SYMMETRIC_PAIRS:
+            if left_idx >= len(landmarks) or right_idx >= len(landmarks):
+                continue
+            lx = landmarks[left_idx].x * w
+            ly = landmarks[left_idx].y * h
+            rx = landmarks[right_idx].x * w
+            ry = landmarks[right_idx].y * h
+
+            lxr = M[0, 0] * lx + M[0, 1] * ly + M[0, 2]
+            rxr = M[0, 0] * rx + M[0, 1] * ry + M[0, 2]
+            left_dists.append(abs(lxr - cx))
+            right_dists.append(abs(rxr - cx))
+
+        if len(left_dists) < 3 or len(right_dists) < 3:
+            return 0
+
+        left_mean = np.mean(left_dists)
+        right_mean = np.mean(right_dists)
+        divisor = max(left_mean, right_mean)
+        if divisor < 1:
+            return 0
+        ratio = min(left_mean, right_mean) / divisor
+        severity = min(100, max(0, int((1 - ratio) * 180)))
+        return severity
+    except Exception:
         return 0
-    left_center = np.mean(left_points, axis=0)
-    right_center = np.mean(right_points, axis=0)
-    offset = abs((left_center[0] - mid_x) - (right_center[0] - mid_x))
-    severity = min(100, max(0, int(offset / 3)))
-    return severity
 
 def analyze_face(image_path):
     img = cv2.imread(image_path)
