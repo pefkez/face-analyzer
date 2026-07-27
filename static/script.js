@@ -104,6 +104,14 @@ function showResults(data) {
     document.getElementById('totalSeverity').textContent = data.total_severity + '%';
     document.getElementById('problemsCount').textContent = data.problems_count;
 
+    const tierEl = document.getElementById('tierValue');
+    const tierCard = document.getElementById('tierCard');
+    if (data.tier) {
+        tierEl.textContent = data.tier.label;
+        tierEl.style.color = data.tier.color;
+        tierCard.style.borderColor = data.tier.color;
+    }
+
     const img = document.getElementById('faceImage');
     img.src = data.image_url;
     img.onload = () => renderOverlay(data);
