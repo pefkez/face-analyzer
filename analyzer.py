@@ -139,21 +139,46 @@ def detect_acne(roi, mask):
     if mask is None or cv2.countNonZero(mask) < 50:
         return []
     hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
-    lower_red1 = np.array([0, 50, 50])
+    lower_red1 = np.array([0, 40, 40])
     upper_red1 = np.array([10, 255, 255])
-    lower_red2 = np.array([170, 50, 50])
+    lower_red2 = np.array([165, 40, 40])
     upper_red2 = np.array([180, 255, 255])
     mask1 = cv2.inRange(hsv, lower_red1, upper_red1)
     mask2 = cv2.inRange(hsv, lower_red2, upper_red2)
     red_mask = cv2.bitwise_or(mask1, mask2)
     red_mask = cv2.bitwise_and(red_mask, mask)
+
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+    red_mask = cv2.morphologyEx(red_mask, cv2.MORPH_OPEN, kernel)
+
     contours, _ = cv2.findContours(red_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     spots = []
     for cnt in contours:
         area = cv2.contourArea(cnt)
-        if 5 < area < 500:
-            x, y, w, h = cv2.boundingRect(cnt)
-            spots.append({"x": x, "y": y, "w": w, "h": h, "area": int(area)})
+        if area < 8 or area > 500:
+            continue
+        perimeter = cv2.arcLength(cnt, True)
+        if perimeter == 0:
+            continue
+        circularity = 4 * np.pi * area / (perimeter * perimeter)
+        if circularity > 0.85:
+            continue
+
+        x, y, sw, sh = cv2.boundingRect(cnt)
+        spot_roi = roi[y:y+sh, x:x+sw]
+        if spot_roi.size == 0:
+            continue
+
+        gray_spot = cv2.cvtColor(spot_roi, cv2.COLOR_BGR2GRAY)
+        center_region = gray_spot[sh//4:3*sh//4, sw//4:3*sw//4]
+        if center_region.size == 0:
+            continue
+        center_mean = np.mean(center_region)
+        spot_mean = np.mean(gray_spot)
+        if center_mean >= spot_mean + 3:
+            continue
+
+        spots.append({"x": x, "y": y, "w": sw, "h": sh, "area": int(area)})
     return spots
 
 def detect_dark_circles(roi, mask):
