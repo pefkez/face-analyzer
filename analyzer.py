@@ -181,14 +181,21 @@ def detect_acne(roi, mask):
         spots.append({"x": x, "y": y, "w": sw, "h": sh, "area": int(area)})
     return spots
 
-def detect_dark_circles(roi, mask):
+def detect_dark_circles(roi, mask, face_mask=None):
     if mask is None or cv2.countNonZero(mask) < 50:
         return None
     gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
-    mean_val = cv2.mean(gray, mask)[0]
-    face_mean = cv2.mean(gray)[0] if cv2.mean(gray)[0] > 0 else 128
-    diff = face_mean - mean_val
-    severity = min(100, max(0, int(diff * 2.5)))
+    under_eyes_mean = cv2.mean(gray, mask)[0]
+
+    if face_mask is not None and cv2.countNonZero(face_mask) > 100:
+        face_mean = cv2.mean(gray, face_mask)[0]
+    else:
+        face_mean = cv2.mean(gray)[0]
+    if face_mean < 1:
+        face_mean = 128
+
+    diff = face_mean - under_eyes_mean
+    severity = min(100, max(0, int(diff * 2.5 * (face_mean / 128))))
     return severity
 
 def detect_redness(roi, mask):
@@ -270,6 +277,8 @@ def analyze_face(image_path):
                 "data": PROBLEM_DESCRIPTIONS["asymmetry"]
             })
 
+        face_mask = get_region_mask(h, w, landmarks, FACE_OVERALL)
+
         regions = [
             {"name": "forehead", "indices": FOREHEAD, "check": ["acne", "redness", "pores", "wrinkles"]},
             {"name": "left_cheek", "indices": LEFT_CHEEK, "check": ["acne", "redness", "pores"]},
@@ -345,7 +354,7 @@ def analyze_face(image_path):
             lx, ly, lw, lh = cv2.boundingRect(under_left_mask) if cv2.countNonZero(under_left_mask) > 50 else (0,0,0,0)
             rx, ry, rw, rh = cv2.boundingRect(under_right_mask) if cv2.countNonZero(under_right_mask) > 50 else (0,0,0,0)
 
-            severity = detect_dark_circles(img, under_eyes_mask)
+            severity = detect_dark_circles(img, under_eyes_mask, face_mask)
             if severity and severity > 15:
                 problems.append({"type": "dark_circles", "severity": severity, "zone": "under_eyes"})
                 if lw > 0:
