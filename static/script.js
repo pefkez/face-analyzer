@@ -4,7 +4,10 @@ const COLORS = {
     redness: '#ff7675',
     pores: '#fdcb6e',
     wrinkles: '#81ecec',
-    asymmetry: '#a29bfe'
+    asymmetry: '#a29bfe',
+    red: '#ff6b6b',
+    orange: '#ffa94d',
+    yellow: '#ffd43b'
 };
 
 const ZONE_NAMES = {

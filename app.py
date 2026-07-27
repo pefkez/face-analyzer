@@ -1,17 +1,32 @@
 import os
 import uuid
+import time
+import threading
+from pathlib import Path
 from flask import Flask, render_template, request, jsonify, send_from_directory
 from analyzer import analyze_face
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
+app.config['CLEANUP_MAX_AGE'] = 3600
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def cleanup_old_files():
+    while True:
+        time.sleep(600)
+        now = time.time()
+        for f in Path(app.config['UPLOAD_FOLDER']).iterdir():
+            if f.is_file() and now - f.stat().st_mtime > app.config['CLEANUP_MAX_AGE']:
+                f.unlink(missing_ok=True)
+
+cleanup_thread = threading.Thread(target=cleanup_old_files, daemon=True)
+cleanup_thread.start()
 
 @app.route('/')
 def index():
@@ -34,6 +49,7 @@ def analyze():
     result = analyze_face(filepath)
 
     if "error" in result:
+        os.remove(filepath)
         return jsonify(result), 400
 
     result["image_url"] = f"/uploads/{filename}"
