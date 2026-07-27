@@ -64,7 +64,11 @@ def analyze():
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     file.save(filepath)
 
-    result = analyze_face(filepath)
+    try:
+        result = analyze_face(filepath)
+    except Exception:
+        os.remove(filepath)
+        return jsonify({"error": "Внутренняя ошибка сервера."}), 500
 
     if "error" in result:
         os.remove(filepath)
@@ -77,5 +81,14 @@ def analyze():
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
+@app.errorhandler(413)
+def request_entity_too_large(_e):
+    return jsonify({"error": "Файл слишком большой. Максимум 16MB."}), 413
+
+@app.errorhandler(500)
+def internal_error(_e):
+    return jsonify({"error": "Внутренняя ошибка сервера."}), 500
+
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    debug_mode = os.environ.get('FLASK_DEBUG', '0') == '1'
+    app.run(debug=debug_mode, host='0.0.0.0', port=5000)
