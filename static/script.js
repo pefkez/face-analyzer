@@ -143,8 +143,16 @@ function renderProblemsList(data) {
 
     const grouped = {};
     data.problem_zones.forEach(z => {
-        if (!grouped[z.type]) grouped[z.type] = { ...z, count: 0 };
+        if (!grouped[z.type]) {
+            grouped[z.type] = { ...z, count: 0, maxSeverity: 0 };
+        }
         grouped[z.type].count++;
+        if (z.severity > grouped[z.type].maxSeverity) {
+            grouped[z.type].maxSeverity = z.severity;
+            grouped[z.type].severity = z.severity;
+            grouped[z.type].data = z.data;
+            grouped[z.type].label = z.label;
+        }
     });
 
     Object.values(grouped).forEach(zone => {
@@ -154,7 +162,7 @@ function renderProblemsList(data) {
         item.innerHTML = `
             <div class="problem-header">
                 <span class="problem-name">${zone.label}</span>
-                <span class="problem-severity">${zone.severity}%</span>
+                <span class="problem-severity">${zone.maxSeverity}%</span>
             </div>
             <div class="problem-zone">${zoneName}${zone.count > 1 ? ` (${zone.count} участка)` : ''}</div>
         `;
