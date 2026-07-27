@@ -11,6 +11,7 @@ const COLORS = {
 };
 
 const REQUEST_TIMEOUT = 30000;
+const MAX_RETRIES = 2;
 
 const ZONE_NAMES = {
     forehead: 'Лоб',
@@ -63,10 +64,14 @@ function uploadFile(file) {
     const formData = new FormData();
     formData.append('photo', file);
 
+    sendWithRetry('/analyze', formData, 0);
+}
+
+function sendWithRetry(url, body, attempt) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
 
-    fetch('/analyze', { method: 'POST', body: formData, signal: controller.signal })
+    fetch(url, { method: 'POST', body, signal: controller.signal })
         .then(r => r.json().then(data => ({ ok: r.ok, data })))
         .then(({ ok, data }) => {
             clearTimeout(timeoutId);
@@ -83,8 +88,12 @@ function uploadFile(file) {
                 showError('Сервер не отвечает. Попробуйте снова.');
                 return;
             }
-            document.getElementById('loading-section').classList.add('hidden');
-            showError('Ошибка соединения с сервером. Попробуйте снова.');
+            if (attempt < MAX_RETRIES) {
+                setTimeout(() => sendWithRetry(url, body, attempt + 1), 1000 * (attempt + 1));
+            } else {
+                document.getElementById('loading-section').classList.add('hidden');
+                showError('Ошибка соединения с сервером. Попробуйте снова.');
+            }
         });
 }
 
