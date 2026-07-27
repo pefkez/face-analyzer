@@ -252,5 +252,8 @@ function resetApp() {
     document.getElementById('legend').innerHTML = '';
     document.getElementById('problemModal').classList.add('hidden');
     document.getElementById('fileInput').value = '';
+    document.getElementById('tierValue').textContent = '—';
+    document.getElementById('tierValue').style.color = '';
+    document.getElementById('tierCard').style.borderColor = '';
     currentData = null;
 }
