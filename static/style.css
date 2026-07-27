@@ -179,6 +179,17 @@ header p {
     color: var(--orange);
 }
 
+.summary-card.tier-card .summary-value {
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+}
+
+.summary-card.tier-card {
+    border-color: var(--border);
+    transition: border-color 0.4s;
+}
+
 .summary-label {
     font-size: 0.85rem;
     color: var(--text2);
