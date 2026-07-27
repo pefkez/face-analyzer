@@ -101,8 +101,42 @@ function showResults(data) {
     currentData = data;
     document.getElementById('result-section').classList.remove('hidden');
 
+    const cards = document.querySelectorAll('.summary-card');
+    cards.forEach((card, i) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(16px)';
+        requestAnimationFrame(() => {
+            card.style.transition = `opacity 0.4s ease-out ${i * 0.08}s, transform 0.4s ease-out ${i * 0.08}s`;
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        });
+    });
+
+    const resultBody = document.querySelector('.result-body');
+    const resultBtn = document.querySelector('.result-section > .btn');
+    if (resultBody) {
+        resultBody.style.opacity = '0';
+        resultBody.style.transform = 'translateY(20px)';
+        requestAnimationFrame(() => {
+            resultBody.style.transition = 'opacity 0.5s ease-out 0.25s, transform 0.5s ease-out 0.25s';
+            resultBody.style.opacity = '1';
+            resultBody.style.transform = 'translateY(0)';
+        });
+    }
+
     document.getElementById('totalSeverity').textContent = data.total_severity + '%';
     document.getElementById('problemsCount').textContent = data.problems_count;
+
+    const resetBtn = document.querySelector('#result-section > .btn');
+    if (resetBtn) {
+        resetBtn.style.opacity = '0';
+        resetBtn.style.transform = 'translateY(12px)';
+        requestAnimationFrame(() => {
+            resetBtn.style.transition = 'opacity 0.4s ease-out 0.4s, transform 0.4s ease-out 0.4s';
+            resetBtn.style.opacity = '1';
+            resetBtn.style.transform = 'translateY(0)';
+        });
+    }
 
     const tierEl = document.getElementById('tierValue');
     const tierCard = document.getElementById('tierCard');
