@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  face-analyzer:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_DEBUG=0
+      - FACE_BOT_TOKEN=${FACE_BOT_TOKEN:-}
+    volumes:
+      - ./uploads:/app/uploads
+      - ./history:/app/history
+      - ./face_analyzer.db:/app/face_analyzer.db
+    restart: unless-stopped

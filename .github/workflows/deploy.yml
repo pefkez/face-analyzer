@@ -1,0 +1,23 @@
+name: Deploy
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+      - run: python -c "import flask, cv2, mediapipe, numpy; print('deps ok')"
+
+  docker:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "Deploy ready — add your registry push here"

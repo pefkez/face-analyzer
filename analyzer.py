@@ -55,7 +55,12 @@ PROBLEM_DESCRIPTIONS = {
             "Умывайтесь мягким гелем с pH 5.5",
             "Посетите дерматолога для подбора терапии"
         ],
-        "products": ["Салициловая кислота 2%", "Бензоилпероксид 2.5%", "Гель для умывания с цинком"]
+        "products": ["Салициловая кислота 2%", "Бензоилпероксид 2.5%", "Гель для умывания с цинком"],
+        "affiliate_links": [
+            "https://www.iherb.com/pr/salicylic-acid-2%25/12345",
+            "https://www.iherb.com/pr/benzoyl-peroxide-2.5%25/67890",
+            "https://www.iherb.com/pr/zinc-cleanser/11111"
+        ]
     },
     "dark_circles": {
         "label": "Тёмные круги под глазами",
@@ -67,7 +72,12 @@ PROBLEM_DESCRIPTIONS = {
             "Делайте лимфодренажный массаж",
             "Пейте достаточно воды (30 мл на кг веса)"
         ],
-        "products": ["Крем с кофеином для век", "Патчи гидрогелевые", "Сыворотка с витамином С"]
+        "products": ["Крем с кофеином для век", "Патчи гидрогелевые", "Сыворотка с витамином С"],
+        "affiliate_links": [
+            "https://www.iherb.com/pr/caffeine-eye-cream/22222",
+            "https://www.iherb.com/pr/hydrogel-patches/33333",
+            "https://www.iherb.com/pr/vitamin-c-serum/44444"
+        ]
     },
     "redness": {
         "label": "Покраснения и купероз",
@@ -79,7 +89,12 @@ PROBLEM_DESCRIPTIONS = {
             "Наносите SPF 50 ежедневно",
             "Умойтесь и используйте термальную воду"
         ],
-        "products": ["Ниацинамид 5%", "Крем с центеллой азиатской", "SPF 50+"]
+        "products": ["Ниацинамид 5%", "Крем с центеллой азиатской", "SPF 50+"],
+        "affiliate_links": [
+            "https://www.iherb.com/pr/niacinamide-5%25/55555",
+            "https://www.iherb.com/pr/cica-cream/66666",
+            "https://www.iherb.com/pr/spf-50+/77777"
+        ]
     },
     "asymmetry": {
         "label": "Асимметрия лица",
@@ -91,7 +106,11 @@ PROBLEM_DESCRIPTIONS = {
             "Следите за осанкой",
             "Массаж лица для расслабления мышц"
         ],
-        "products": ["Гуаша для массажа", "Масло для массажа лица"]
+        "products": ["Гуаша для массажа", "Масло для массажа лица"],
+        "affiliate_links": [
+            "https://www.iherb.com/pr/gua-sha-tool/88888",
+            "https://www.iherb.com/pr/facial-massage-oil/99999"
+        ]
     },
     "pores": {
         "label": "Расширенные поры",
@@ -103,7 +122,12 @@ PROBLEM_DESCRIPTIONS = {
             "Наносите SPF 50 ежедневно",
             "Умывайтесь с AHA-кислотами"
         ],
-        "products": ["Ниацинамид 10%", "Энзимная пудра", "AHA-тоник 5%"]
+        "products": ["Ниацинамид 10%", "Энзимная пудра", "AHA-тоник 5%"],
+        "affiliate_links": [
+            "https://www.iherb.com/pr/niacinamide-10%25/10101",
+            "https://www.iherb.com/pr/enzyme-powder/20202",
+            "https://www.iherb.com/pr/aha-toner-5%25/30303"
+        ]
     },
     "wrinkles": {
         "label": "Мимические морщины",
@@ -115,13 +139,63 @@ PROBLEM_DESCRIPTIONS = {
             "SPF 50 — обязателен каждый день",
             "Пейте коллаген в добавках"
         ],
-        "products": ["Ретинол 0.3%", "Гиалуроновая кислота", "SPF 50+"]
+        "products": ["Ретинол 0.3%", "Гиалуроновая кислота", "SPF 50+"],
+        "affiliate_links": [
+            "https://www.iherb.com/pr/retinol-0.3%25/40404",
+            "https://www.iherb.com/pr/hyaluronic-acid/50505",
+            "https://www.iherb.com/pr/spf-50+/60606"
+        ]
     }
 }
+
+_onnx_session = None
+_onnx_labels = None
+
+
+def _load_onnx():
+    global _onnx_session, _onnx_labels
+    if _onnx_session is not None:
+        return True
+    try:
+        import onnxruntime as ort
+        model_path = os.path.join(os.path.dirname(__file__), 'skin_model.onnx')
+        if not os.path.exists(model_path):
+            return False
+        _onnx_session = ort.InferenceSession(model_path)
+        _onnx_labels = ['acne', 'redness', 'dryness', 'pigmentation', 'healthy']
+        return True
+    except Exception:
+        return False
+
+
+def _predict_with_onnx(roi):
+    if not _load_onnx():
+        return None
+    try:
+        img = cv2.resize(roi, (224, 224))
+        img = img.astype(np.float32) / 255.0
+        img = np.transpose(img, (2, 0, 1))
+        img = np.expand_dims(img, axis=0)
+        input_name = _onnx_session.get_inputs()[0].name
+        outputs = _onnx_session.run(None, {input_name: img})
+        probs = outputs[0][0]
+        return {_onnx_labels[i]: float(probs[i]) for i in range(len(_onnx_labels))}
+    except Exception:
+        return None
+
+
+def mask_iou(mask_a, mask_b):
+    intersection = cv2.bitwise_and(mask_a, mask_b)
+    union = cv2.bitwise_or(mask_a, mask_b)
+    intersected = cv2.countNonZero(intersection)
+    total = cv2.countNonZero(union)
+    return intersected / total if total > 0 else 0
+
 
 def get_landmark_coords(landmarks, idx, w, h):
     lm = landmarks[idx]
     return int(lm.x * w), int(lm.y * h)
+
 
 def get_region_mask(h, w, landmarks, region_indices):
     mask = np.zeros((h, w), dtype=np.uint8)
@@ -134,6 +208,7 @@ def get_region_mask(h, w, landmarks, region_indices):
         hull = cv2.convexHull(np.array(points))
         cv2.fillConvexPoly(mask, hull, 255)
     return mask
+
 
 def detect_acne(roi, mask):
     if mask is None or cv2.countNonZero(mask) < 50:
@@ -150,6 +225,9 @@ def detect_acne(roi, mask):
 
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
     red_mask = cv2.morphologyEx(red_mask, cv2.MORPH_OPEN, kernel)
+
+    onnx_probs = _predict_with_onnx(roi)
+    onnx_acne_bonus = onnx_probs.get('acne', 0) * 20 if onnx_probs else 0
 
     contours, _ = cv2.findContours(red_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     spots = []
@@ -178,8 +256,10 @@ def detect_acne(roi, mask):
         if center_mean >= spot_mean + 3:
             continue
 
-        spots.append({"x": x, "y": y, "w": sw, "h": sh, "area": int(area)})
+        bonus_area = int(area * (1 + onnx_acne_bonus / 100))
+        spots.append({"x": x, "y": y, "w": sw, "h": sh, "area": bonus_area})
     return spots
+
 
 def detect_dark_circles(roi, mask, face_mask=None):
     if mask is None or cv2.countNonZero(mask) < 50:
@@ -196,7 +276,13 @@ def detect_dark_circles(roi, mask, face_mask=None):
 
     diff = face_mean - under_eyes_mean
     severity = min(100, max(0, int(diff * 2.5 * (face_mean / 128))))
+
+    onnx_probs = _predict_with_onnx(roi)
+    if onnx_probs and onnx_probs.get('pigmentation', 0) > 0.3:
+        severity = min(100, severity + int(onnx_probs['pigmentation'] * 15))
+
     return severity
+
 
 def detect_redness(roi, mask):
     if mask is None or cv2.countNonZero(mask) < 50:
@@ -206,7 +292,13 @@ def detect_redness(roi, mask):
     g_mean = cv2.mean(g, mask)[0]
     ratio = r_mean / max(g_mean, 1)
     severity = min(100, max(0, int((ratio - 1.05) * 200)))
+
+    onnx_probs = _predict_with_onnx(roi)
+    if onnx_probs and onnx_probs.get('redness', 0) > 0.3:
+        severity = min(100, severity + int(onnx_probs['redness'] * 20))
+
     return severity
+
 
 def detect_pores(roi, mask):
     if mask is None or cv2.countNonZero(mask) < 50:
@@ -216,6 +308,7 @@ def detect_pores(roi, mask):
     variance = cv2.mean(laplacian ** 2, mask)[0]
     severity = min(100, max(0, int(variance / 15)))
     return severity
+
 
 def detect_wrinkles(roi, mask):
     if mask is None or cv2.countNonZero(mask) < 50:
@@ -241,6 +334,7 @@ def detect_wrinkles(roi, mask):
         return severity
     except Exception:
         return None
+
 
 def analyze_asymmetry(landmarks, w, h):
     try:
@@ -283,6 +377,7 @@ def analyze_asymmetry(landmarks, w, h):
         return severity
     except Exception:
         return 0
+
 
 def analyze_face(image_path):
     img = cv2.imread(image_path)

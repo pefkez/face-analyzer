@@ -27,6 +27,7 @@ const TRANSLATIONS = {
         summary_problems: 'Проблем найдено',
         summary_tier: 'Тир',
         btn_reset: 'Анализировать другое фото',
+        btn_compare: 'Сравнить с предыдущим',
         error_title: 'Ошибка',
         btn_retry: 'Попробовать снова',
         upload_error_format: 'Пожалуйста, выберите изображение в формате PNG или JPG.',
@@ -49,7 +50,11 @@ const TRANSLATIONS = {
         modal_causes: 'Возможные причины',
         modal_recommendations: 'Рекомендации',
         modal_products: 'Рекомендуемые средства',
+        modal_buy: 'Купить',
         sections: ' участка',
+        nav_analyze: 'Анализ',
+        nav_history: 'История',
+        nav_compare: 'Сравнение',
     },
     en: {
         header_desc: 'Upload a face photo — get skin analysis & recommendations',
@@ -64,6 +69,7 @@ const TRANSLATIONS = {
         summary_problems: 'Issues Found',
         summary_tier: 'Tier',
         btn_reset: 'Analyze another photo',
+        btn_compare: 'Compare with previous',
         error_title: 'Error',
         btn_retry: 'Try again',
         upload_error_format: 'Please select a PNG or JPG image.',
@@ -86,7 +92,11 @@ const TRANSLATIONS = {
         modal_causes: 'Possible Causes',
         modal_recommendations: 'Recommendations',
         modal_products: 'Recommended Products',
+        modal_buy: 'Buy',
         sections: ' sections',
+        nav_analyze: 'Analyze',
+        nav_history: 'History',
+        nav_compare: 'Compare',
     }
 };
 
@@ -137,6 +147,8 @@ const EN_DESCRIPTIONS = {
 
 let currentLang = 'ru';
 let currentData = null;
+let lastAnalysisId = null;
+let compareMode = false;
 
 function t(key) {
     const val = TRANSLATIONS[currentLang][key];
@@ -188,7 +200,22 @@ document.addEventListener('DOMContentLoaded', () => {
     fileInput.addEventListener('change', (e) => {
         if (e.target.files.length > 0) uploadFile(e.target.files[0]);
     });
+
+    const params = new URLSearchParams(location.search);
+    if (params.get('load')) {
+        loadHistoryAnalysis(params.get('load'));
+    }
 });
+
+async function loadHistoryAnalysis(id) {
+    try {
+        const r = await fetch(`/api/history/${id}`);
+        const data = await r.json();
+        if (data.error) return;
+        document.getElementById('upload-section').classList.add('hidden');
+        showResults({ ...data.result, image_url: '/' + data.image_path.replace(/\\/g, '/'), analysis_id: data.id });
+    } catch(e) {}
+}
 
 function uploadFile(file) {
     if (!file.type.match(/^image\/(png|jpeg|webp)$/)) {
@@ -206,6 +233,10 @@ function uploadFile(file) {
     const formData = new FormData();
     formData.append('photo', file);
 
+    if (compareMode && lastAnalysisId) {
+        formData.append('compare_with', lastAnalysisId);
+    }
+
     sendWithRetry('/analyze', formData, 0);
 }
 
@@ -222,6 +253,7 @@ function sendWithRetry(url, body, attempt) {
                 showError(data.error || t('connection_error'));
                 return;
             }
+            compareMode = false;
             showResults(data);
         })
         .catch((err) => {
@@ -241,6 +273,7 @@ function sendWithRetry(url, body, attempt) {
 
 function showResults(data) {
     currentData = data;
+    lastAnalysisId = data.analysis_id;
     document.getElementById('result-section').classList.remove('hidden');
 
     const cards = document.querySelectorAll('.summary-card');
@@ -285,6 +318,12 @@ function showResults(data) {
         tierEl.textContent = data.tier.label;
         tierEl.style.color = data.tier.color;
         tierCard.style.borderColor = data.tier.color;
+    }
+
+    const compareBtn = document.getElementById('btnCompare');
+    if (compareBtn) {
+        compareBtn.classList.remove('hidden');
+        compareBtn.textContent = t('btn_compare');
     }
 
     const img = document.getElementById('faceImage');
@@ -374,7 +413,16 @@ function openModal(zone) {
         ? EN_DESCRIPTIONS[zone.type]
         : zone.data;
 
+    const hasAffiliate = d.affiliate_links && d.affiliate_links.length > 0;
+
     let severityColor = zone.severity > 60 ? COLORS.red : zone.severity > 30 ? COLORS.orange : COLORS.yellow;
+
+    let productsHtml = d.products.map((p, i) => {
+        if (hasAffiliate && d.affiliate_links[i]) {
+            return `<a href="${d.affiliate_links[i]}" target="_blank" rel="noopener" class="product-tag product-link">${p} ↗</a>`;
+        }
+        return `<span class="product-tag">${p}</span>`;
+    }).join('');
 
     body.innerHTML = `
         <h2>${d.label}</h2>
@@ -395,7 +443,7 @@ function openModal(zone) {
         </div>
         <div class="modal-section">
             <h3>${t('modal_products')}</h3>
-            <div>${d.products.map(p => `<span class="product-tag">${p}</span>`).join('')}</div>
+            <div>${productsHtml}</div>
         </div>
     `;
 
@@ -425,5 +473,21 @@ function resetApp() {
     document.getElementById('tierValue').textContent = '—';
     document.getElementById('tierValue').style.color = '';
     document.getElementById('tierCard').style.borderColor = '';
+    const compareBtn = document.getElementById('btnCompare');
+    if (compareBtn) compareBtn.classList.add('hidden');
+    compareMode = false;
     currentData = null;
+}
+
+function setCompareMode() {
+    if (!lastAnalysisId) return;
+    compareMode = true;
+    const btn = document.getElementById('btnCompare');
+    btn.textContent = '📸 ' + (currentLang === 'ru' ? 'Загрузите новое фото для сравнения' : 'Upload new photo to compare');
+    btn.classList.add('compare-active');
+    document.getElementById('faceImage').src = '';
+    document.getElementById('overlay').innerHTML = '';
+    document.getElementById('problemsList').innerHTML = '';
+    document.getElementById('legend').innerHTML = '';
+    document.getElementById('upload-section').classList.remove('hidden');
 }

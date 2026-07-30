@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Сравнение — TruecelAnalyzer</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 12px; }
+        .compare-card { background: var(--glass); backdrop-filter: blur(12px); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; text-align: center; }
+        .compare-card h3 { font-size: 0.9rem; margin-bottom: 4px; }
+        .compare-card .c-tier { font-size: 1.3rem; font-weight: 800; margin: 4px 0; }
+        .compare-card .c-score { font-size: 0.8rem; color: var(--text2); }
+        .improvement { text-align: center; margin-top: 12px; padding: 12px; border-radius: var(--radius); font-size: 1.1rem; font-weight: 700; }
+        .improvement.up { background: rgba(76,217,168,0.1); border: 1px solid var(--green); color: var(--green); }
+        .improvement.down { background: rgba(255,107,107,0.1); border: 1px solid var(--red); color: var(--red); }
+        .improvement.same { background: rgba(255,217,61,0.1); border: 1px solid var(--yellow); color: var(--yellow); }
+        .empty-state { text-align: center; padding: 40px; color: var(--text3); }
+        @media (max-width: 768px) { .compare-grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="nav-links">
+        <a href="/" class="nav-link" data-i18n="nav_analyze">Анализ</a>
+        <a href="/history" class="nav-link" data-i18n="nav_history">История</a>
+        <a href="/compare" class="nav-link active" data-i18n="nav_compare">Сравнение</a>
+    </div>
+    <div class="bg-orbs"><div class="orb orb-1"></div><div class="orb orb-2"></div><div class="orb orb-3"></div></div>
+    <div class="container">
+        <header><h1>Сравнение до/после</h1><p>Анализируйте динамику состояния кожи</p></header>
+        <div id="compareList"></div>
+    </div>
+    <script>
+        async function loadComparisons() {
+            const el = document.getElementById('compareList');
+            try {
+                const r = await fetch('/api/before-after');
+                const data = await r.json();
+                if (data.length === 0) { el.innerHTML = '<div class="empty-state">Нет сравнений. Сделайте анализ, а затем на странице анализа нажмите "Сравнить с предыдущим"</div>'; return; }
+                el.innerHTML = data.map(c => {
+                    const diff = c.before_severity - c.after_severity;
+                    let cls = 'same', label = 'Без изменений';
+                    if (diff > 0) { cls = 'up'; label = `Улучшение на ${diff}%`; }
+                    else if (diff < 0) { cls = 'down'; label = `Ухудшение на ${Math.abs(diff)}%`; }
+                    return `<div class="compare-grid">
+                        <div class="compare-card"><h3>До</h3><div class="c-tier" style="color:${c.before_severity > 50 ? '#ff6b6b' : '#4cd9a8'}">${c.before_tier}</div><div class="c-score">${c.before_severity}%</div></div>
+                        <div class="compare-card"><h3>После</h3><div class="c-tier" style="color:${c.after_severity > 50 ? '#ff6b6b' : '#4cd9a8'}">${c.after_tier}</div><div class="c-score">${c.after_severity}%</div></div>
+                    </div>
+                    <div class="improvement ${cls}">${label}</div>
+                    <div style="text-align:center;margin-top:8px;font-size:0.75rem;color:var(--text3)">${new Date(c.timestamp).toLocaleString()}</div>
+                    <hr style="border-color:var(--border);margin:16px 0">`;
+                }).join('');
+            } catch(e) { el.innerHTML = '<div class="empty-state">Ошибка загрузки</div>'; }
+        }
+        loadComparisons();
+    </script>
+</body>
+</html>

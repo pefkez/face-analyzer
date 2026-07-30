@@ -11,6 +11,11 @@
         <button class="lang-btn active" data-lang="ru">RU</button>
         <button class="lang-btn" data-lang="en">EN</button>
     </div>
+    <div class="nav-links">
+        <a href="/" class="nav-link active" data-i18n="nav_analyze">Анализ</a>
+        <a href="/history" class="nav-link" data-i18n="nav_history">История</a>
+        <a href="/compare" class="nav-link" data-i18n="nav_compare">Сравнение</a>
+    </div>
     <div class="bg-orbs">
         <div class="orb orb-1"></div>
         <div class="orb orb-2"></div>
@@ -77,7 +82,10 @@
                 <div class="problems-list" id="problemsList"></div>
             </div>
 
-            <button class="btn btn-secondary" data-i18n="btn_reset" onclick="resetApp()">Анализировать другое фото</button>
+            <div class="result-actions" id="resultActions">
+                <button class="btn btn-secondary" data-i18n="btn_reset" onclick="resetApp()">Анализировать другое фото</button>
+                <button class="btn btn-compare hidden" id="btnCompare" data-i18n="btn_compare" onclick="setCompareMode()">Сравнить с предыдущим</button>
+            </div>
         </div>
 
         <div id="error-section" class="hidden">

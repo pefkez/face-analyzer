@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>История анализов — TruecelAnalyzer</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .history-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+        .history-item { background: var(--glass); backdrop-filter: blur(12px); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; cursor: pointer; transition: var(--transition); display: flex; justify-content: space-between; align-items: center; }
+        .history-item:hover { border-color: var(--accent); transform: translateX(4px); }
+        .history-item .h-left { display: flex; flex-direction: column; gap: 2px; }
+        .history-item .h-date { font-size: 0.75rem; color: var(--text3); }
+        .history-item .h-tier { font-weight: 700; font-size: 1rem; }
+        .history-item .h-stats { font-size: 0.8rem; color: var(--text2); }
+        .history-item .h-delete { background: none; border: none; color: var(--red); cursor: pointer; font-size: 1.2rem; padding: 4px 8px; border-radius: 6px; transition: var(--transition); }
+        .history-item .h-delete:hover { background: rgba(255,107,107,0.15); }
+        .empty-state { text-align: center; padding: 40px; color: var(--text3); }
+    </style>
+</head>
+<body>
+    <div class="nav-links">
+        <a href="/" class="nav-link" data-i18n="nav_analyze">Анализ</a>
+        <a href="/history" class="nav-link active" data-i18n="nav_history">История</a>
+        <a href="/compare" class="nav-link" data-i18n="nav_compare">Сравнение</a>
+    </div>
+    <div class="bg-orbs"><div class="orb orb-1"></div><div class="orb orb-2"></div><div class="orb orb-3"></div></div>
+    <div class="container">
+        <header><h1>История анализов</h1><p>Все ваши прошлые результаты</p></header>
+        <div id="historyList" class="history-list"><div class="empty-state">Загрузка...</div></div>
+    </div>
+    <script>
+        async function loadHistory() {
+            const el = document.getElementById('historyList');
+            try {
+                const r = await fetch('/api/history');
+                const data = await r.json();
+                if (data.length === 0) { el.innerHTML = '<div class="empty-state">История пуста. Сделайте первый анализ!</div>'; return; }
+                el.innerHTML = data.map(h => `<div class="history-item" onclick="location.href='/?load=${h.id}'">
+                    <div class="h-left"><span class="h-date">${new Date(h.timestamp).toLocaleString()}</span><span class="h-tier">${h.tier_label}</span><span class="h-stats">Оценка: ${h.total_severity}% | Проблем: ${h.problems_count}</span></div>
+                    <button class="h-delete" onclick="event.stopPropagation(); deleteAnalysis('${h.id}')">&times;</button>
+                </div>`).join('');
+            } catch(e) { el.innerHTML = '<div class="empty-state">Ошибка загрузки истории</div>'; }
+        }
+        async function deleteAnalysis(id) {
+            if (!confirm('Удалить этот анализ?')) return;
+            await fetch('/api/history/' + id, { method: 'DELETE' });
+            loadHistory();
+        }
+        loadHistory();
+    </script>
+</body>
+</html>
