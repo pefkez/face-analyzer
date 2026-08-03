@@ -9,15 +9,6 @@ python app.py
 
 Открыть http://localhost:5000, загрузить фото (PNG/JPG/WEBP, до 16 MB).
 
-### API
+Есть и API: `POST /analyze` принимает multipart/form-data с полем `photo` и возвращает severity по каждому типу проблем + координаты зон на изображении.
 
-```
-POST /analyze
-multipart/form-data с полем photo
-```
-
-Возвращает severity по каждому типу проблем + координаты зон на изображении.
-
-### Переменные окружения
-
-`FLASK_DEBUG=1` — включить debug mode.
+Если нужно, `FLASK_DEBUG=1` включает debug mode.
